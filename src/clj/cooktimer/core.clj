@@ -1,6 +1,6 @@
 (ns cooktimer.core
   (:require [hiccup.page :as h]
-            [garden.core :refer [css]]
+            [cooktimer.css :refer [page-css]]
             [ring.util.response :refer [response content-type]]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.resource :refer [wrap-resource]]
@@ -17,37 +17,16 @@
 (defn layout [body {:keys [env]}]
   (h/html5
     [:head
-     [:title "Cook Time"]
+     [:title "Cook Timer"]
      [:link {:rel "stylesheet" :href "/style.css"}]
-     [:link {:rel "stylesheet" :href "http://fonts.googleapis.com/css?family=Roboto"}]]
+     [:link {:rel "stylesheet" :href "http://fonts.googleapis.com/css?family=Roboto:400,500,300"}]]
     (into
       [:body]
       (concat body dev-js))))
 
 (def page-body
-  [[:div#my-app]])
-
-(def page-css
-  (css
-    ["*"
-     {:font-family ["'Roboto'" "sans-serif"]}]
-    ["button"
-     {:background "#fff"
-      :border "1px solid #000"
-      :cursor "pointer"
-      :padding "20px"}]
-    [".flex-row" {:display "flex"}]
-    [".flex-column" {:display "flex" :flex-direction "column"}]
-    [".flex" {:flex "1"}]
-    [".recipe"
-     {:border "1px solid #000"
-      :margin "10px 0"}]
-    [".timeline"
-     {:padding "5px"}
-     [".fill"
-      {:background "#3CDD83"
-       :flex "1"
-       :width "0"}]]))
+  [[:div.font-display-4 "Cook Timer"]
+   [:div#my-app]])
 
 (defroutes main-routes
   (GET "/" [] (layout page-body {}))
