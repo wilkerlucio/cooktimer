@@ -20,7 +20,7 @@
      [:title "Cook Timer"]
      [:link {:rel "stylesheet" :href "/style.css"}]
      [:link {:rel "stylesheet" :href "http://fonts.googleapis.com/css?family=Roboto:400,500,300"}]]
-    (into
+    (cons
       [:body]
       (concat body dev-js))))
 

@@ -1,5 +1,6 @@
 (ns cooktimer.css
-  (:require [garden.compiler :refer [compile-css]]))
+  (:require [garden.compiler :refer [compile-css]]
+            [clojure.walk :as walk]))
 
 (def reset-box-model
   {:margin  0
@@ -101,7 +102,8 @@
      :border "1px solid #000"
      :cursor "pointer"
      :padding "20px"
-     :outline 0}]
+     :outline 0
+     :width "100px"}]
    [".recipe"
     {:border "1px solid #000"
      :margin "10px 0"}]

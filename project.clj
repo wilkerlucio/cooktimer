@@ -12,6 +12,8 @@
                  [ring/ring-jetty-adapter "1.1.0"]
                  [garden "1.1.8"]]
 
+  :source-paths ["src/clj" "src/cljs"]
+
   :plugins [[lein-cljsbuild "1.0.3"]
             [jarohen/simple-brepl "0.1.1"]]
 

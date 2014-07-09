@@ -1,9 +1,12 @@
 (ns cooktimer.core
-  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]]
+                   [cooktimer.macros :refer [go-forever]])
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [cljs.core.async :refer [chan <! >! timeout]]
             cooktimer.repl))
+
+(enable-console-print!)
 
 (defn comparator-by [key]
   #(apply compare (map key %&)))
@@ -23,7 +26,8 @@
     :state :paused
     :pending (:stops recipe)))
 
-(defn current-time [] (-> (js/Date.) .getTime))
+(defn current-time []
+  (-> (js/Date.) .getTime))
 
 (defn elapsed-from
   ([start-time offset]
@@ -31,7 +35,7 @@
         (- start-time)
         (+ offset))))
 
-(defn start [timer]
+(defn start-timer [timer]
   (om/transact! timer #(assoc % :state :running))
   (let [start-time (current-time)
         offset (:elapsed @timer)]
@@ -43,22 +47,28 @@
 (defn stop [timer]
   (om/transact! timer #(assoc % :state :paused)))
 
+;; bonus notice, when using macbook retina, SVG drawing is much smoother than plain HTML blocks
+(defn render-progress [elapsed total]
+  (let [progress (* (/ elapsed total) 100)]
+    (dom/svg #js {:className "flex" :style #js {:height "30px"}}
+      (dom/rect #js {:width (str progress "%")
+                     :height "100%"
+                     :fill "green"}))))
+
 (defn recipe-component [[_ timer] _]
   (reify
     om/IRender
     (render [_]
       (let [total (total-time timer)
-            elapsed (:elapsed timer)
-            progress (* (/ elapsed total) 100)]
+            elapsed (:elapsed timer)]
         (dom/div #js {:className "recipe flex-row"}
           (dom/div #js {:className "flex flex-column"}
             (dom/div nil (:title timer))
             (dom/div #js {:className "flex flex-column timeline"}
-              (dom/div #js {:className "fill"
-                            :style #js {:width (str progress "%")}})))
+              (render-progress elapsed total)))
           (case (:state timer)
             :paused
-              (dom/button #js {:onClick #(start timer)} "Start")
+              (dom/button #js {:onClick #(start-timer timer)} "Start")
             :running
               (dom/button #js {:onClick #(stop timer)} "Stop")
             (dom/button nil (str "Invalid " (:state timer)))))))))
@@ -72,13 +82,34 @@
   (om/root app-component (atom state)
            {:target (.getElementById js/document "my-app")}))
 
-(def recipe {:title "Pasta"
-             :stops (create-stops {:at 120000 :message "put on the water"}
-                                  {:at 180000 :message "go check it"}
-                                  {:at 420000 :message "take it off"})})
+(defn minutes [n]
+  (* n 60 1000))
+
+(def frozen-pizza
+  {:title "Frozen Pizza"
+   :stops (create-stops {:at (minutes 10) :message "put the pizza in"}
+                        {:at (minutes 22) :message "take pizza out"})})
+
+(def rice
+  {:title "Rice"
+   :stops (create-stops {:at (minutes 10) :message "go in"}
+                        {:at (minutes 35) :message "go out"})})
+
+(def miojo
+  {:title "Miojo"
+   :stops (create-stops {:at (minutes 2) :message "water boiling"}
+                        {:at (minutes 5) :message "go out"})})
 
 (defn generate-recipes [n]
-  (let [col (interleave (range) (repeat (timer recipe)))]
+  (let [col (interleave (range) (repeat (timer frozen-pizza)))]
     (apply sorted-map (take (* n 2) col))))
 
-(init {:recipes (generate-recipes 10)})
+(defn init-recipes [& recipes]
+  (let [col (zipmap (range) (map timer recipes))]
+    (into (sorted-map) col)))
+
+(init {:recipes (init-recipes frozen-pizza
+                              rice
+                              miojo)})
+
+
