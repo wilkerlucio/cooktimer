@@ -23,9 +23,6 @@
     :state :paused
     :pending (:stops recipe)))
 
-(defn elapse [recipe time]
-  (update-in recipe [:elapsed] (partial + time)))
-
 (defn current-time [] (-> (js/Date.) .getTime))
 
 (defn elapsed-from
@@ -79,8 +76,6 @@
              :stops (create-stops {:at 120000 :message "put on the water"}
                                   {:at 180000 :message "go check it"}
                                   {:at 420000 :message "take it off"})})
-
-(-> recipe :stops)
 
 (defn generate-recipes [n]
   (let [col (interleave (range) (repeat (timer recipe)))]
