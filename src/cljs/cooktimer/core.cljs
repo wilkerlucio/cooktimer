@@ -18,43 +18,72 @@
   (-> recipe :stops last :at))
 
 (defn timer [recipe]
-  nil)
+  (assoc recipe
+    :elapsed 0
+    :state :paused
+    :pending (:stops recipe)))
 
-(defn recipe-component [[_ recipe] _]
+(defn elapse [recipe time]
+  (update-in recipe [:elapsed] (partial + time)))
+
+(defn current-time [] (-> (js/Date.) .getTime))
+
+(defn elapsed-from
+  ([start-time offset]
+    (-> (current-time)
+        (- start-time)
+        (+ offset))))
+
+(defn start [timer]
+  (om/transact! timer #(assoc % :state :running))
+  (let [start-time (current-time)
+        offset (:elapsed @timer)]
+    (go-loop []
+      (om/transact! timer #(assoc % :elapsed (elapsed-from start-time offset)))
+      (<! (timeout 100))
+      (if (= (:state @timer) :running) (recur)))))
+
+(defn stop [timer]
+  (om/transact! timer #(assoc % :state :paused)))
+
+(defn recipe-component [[_ timer] _]
   (reify
-    om/IDidMount
-    (did-mount [_]
-      (go-loop []
-        (om/transact! recipe #(assoc % :title (rand-int 1000)))
-        (<! (timeout 100))
-        (recur)))
-
     om/IRender
     (render [_]
-      (dom/div #js {:className "timeline"}
-        (:title recipe)))))
-
-(defn render-recipes [recipes]
-  (om/build-all recipe-component recipes))
+      (let [total (total-time timer)
+            elapsed (:elapsed timer)
+            progress (* (/ elapsed total) 100)]
+        (dom/div #js {:className "recipe flex-row"}
+          (dom/div #js {:className "flex flex-column"}
+            (dom/div nil (:title timer))
+            (dom/div #js {:className "flex flex-column timeline"}
+              (dom/div #js {:className "fill"
+                            :style #js {:width (str progress "%")}})))
+          (case (:state timer)
+            :paused
+              (dom/button #js {:onClick #(start timer)} "Start")
+            :running
+              (dom/button #js {:onClick #(stop timer)} "Stop")
+            (dom/button nil (str "Invalid " (:state timer)))))))))
 
 (defn app-component [data _]
-  (reify
-    om/IRender
-    (render [_]
-      (apply dom/div #js {:className "container"}
-        (render-recipes (:recipes data))))))
+  (om/component
+    (apply dom/div #js {:className "container"}
+      (om/build-all recipe-component (:recipes data)))))
 
 (defn init [state]
   (om/root app-component (atom state)
            {:target (.getElementById js/document "my-app")}))
 
 (def recipe {:title "Pasta"
-             :stops (create-stops {:at 120 :message "put on the water"}
-                                  {:at 180 :message "go check it"}
-                                  {:at 420 :message "take it off"})})
+             :stops (create-stops {:at 120000 :message "put on the water"}
+                                  {:at 180000 :message "go check it"}
+                                  {:at 420000 :message "take it off"})})
+
+(-> recipe :stops)
 
 (defn generate-recipes [n]
-  (let [col (interleave (range) (repeat recipe))]
+  (let [col (interleave (range) (repeat (timer recipe)))]
     (apply sorted-map (take (* n 2) col))))
 
 (init {:recipes (generate-recipes 10)})

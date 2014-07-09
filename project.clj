@@ -9,7 +9,8 @@
                  [om "0.6.4"]
                  [hiccup "1.0.5"]
                  [compojure "1.1.8"]
-                 [ring/ring-jetty-adapter "1.1.0"]]
+                 [ring/ring-jetty-adapter "1.1.0"]
+                 [garden "1.1.8"]]
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [jarohen/simple-brepl "0.1.1"]]
